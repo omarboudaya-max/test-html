@@ -111,31 +111,63 @@ export default function AdminDashboard() {
     );
   }
 
-  const renderHighlightedCode = (code: string, cheatLogs: any[]) => {
-    if (!code) return 'Aucun code';
-    
-    // Échapper le code pour l'affichage (XSS protection)
-    let escapedCode = code.replace(/&/g, "&amp;")
-                          .replace(/</g, "&lt;")
-                          .replace(/>/g, "&gt;")
-                          .replace(/"/g, "&quot;")
-                          .replace(/'/g, "&#039;");
+  const renderHighlightedCode = (codeString: string, cheatLogs: any[]) => {
+    if (!codeString) return 'Aucun code';
+
+    let files = [];
+    try {
+      const parsed = JSON.parse(codeString);
+      if (Array.isArray(parsed)) {
+        files = parsed;
+      } else {
+        files = [{ name: 'index.html', content: codeString }];
+      }
+    } catch {
+      files = [{ name: 'index.html', content: codeString }];
+    }
 
     const pasteLogs = cheatLogs?.filter((log: any) => log.type === 'paste' && log.pastedText) || [];
 
-    pasteLogs.forEach((log: any) => {
-      const escapedPasted = log.pastedText.replace(/&/g, "&amp;")
-                                          .replace(/</g, "&lt;")
-                                          .replace(/>/g, "&gt;")
-                                          .replace(/"/g, "&quot;")
-                                          .replace(/'/g, "&#039;");
-      if (escapedPasted.trim() !== '') {
-        // Remplacer avec la balise de surlignage
-        escapedCode = escapedCode.split(escapedPasted).join(`<span class="bg-red-500/40 text-red-200 border-b-2 border-red-500 font-bold px-1 rounded" title="Copier-Coller suspecté">${escapedPasted}</span>`);
-      }
-    });
+    return files.map((file, idx) => {
+      let escapedCode = file.content.replace(/&/g, "&amp;")
+                            .replace(/</g, "&lt;")
+                            .replace(/>/g, "&gt;")
+                            .replace(/"/g, "&quot;")
+                            .replace(/'/g, "&#039;");
 
-    return <code dangerouslySetInnerHTML={{ __html: escapedCode }} />;
+      pasteLogs.forEach((log: any) => {
+        const escapedPasted = log.pastedText.replace(/&/g, "&amp;")
+                                            .replace(/</g, "&lt;")
+                                            .replace(/>/g, "&gt;")
+                                            .replace(/"/g, "&quot;")
+                                            .replace(/'/g, "&#039;");
+        if (escapedPasted.trim() !== '') {
+          escapedCode = escapedCode.split(escapedPasted).join(`<span class="bg-red-500/40 text-red-200 border-b-2 border-red-500 font-bold px-1 rounded" title="Copier-Coller suspecté">${escapedPasted}</span>`);
+        }
+      });
+
+      return (
+        <div key={idx} className="mb-6">
+          <div className="text-gray-400 font-bold mb-2 border-b border-gray-700 pb-1">{file.name}</div>
+          <code dangerouslySetInnerHTML={{ __html: escapedCode }} className="block" />
+        </div>
+      );
+    });
+  };
+
+  const getCombinedPreview = (codeString: string) => {
+    if (!codeString) return '';
+    try {
+      const parsed = JSON.parse(codeString);
+      if (Array.isArray(parsed)) {
+        const css = parsed.filter((f: any) => f.name.endsWith('.css')).map((f: any) => f.content).join('\n');
+        const html = parsed.filter((f: any) => f.name.endsWith('.html')).map((f: any) => f.content).join('\n');
+        return `<html><head><style>${css}</style></head><body>${html}</body></html>`;
+      }
+      return codeString;
+    } catch {
+      return codeString;
+    }
   };
 
   return (
@@ -272,7 +304,7 @@ export default function AdminDashboard() {
                     <div className="flex-1 bg-white relative rounded-b-lg overflow-hidden">
                       {selectedSubmission.sub?.html_code ? (
                         <iframe
-                          srcDoc={selectedSubmission.sub.html_code}
+                          srcDoc={getCombinedPreview(selectedSubmission.sub.html_code)}
                           className="absolute inset-0 w-full h-full border-0"
                           title="Preview"
                         />
