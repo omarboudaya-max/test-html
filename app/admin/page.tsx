@@ -220,8 +220,8 @@ export default function AdminDashboard() {
 
               <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-              <div className="inline-block align-bottom bg-white rounded-lg text-left shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl sm:w-full flex flex-col max-h-[90vh]">
-                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 flex-shrink-0">
+              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl sm:w-full">
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                   <div className="flex justify-between items-start mb-4">
                     <h3 className="text-2xl font-bold text-gray-900" id="modal-title">
                       Évaluation de {selectedSubmission.student.first_name} {selectedSubmission.student.last_name}
@@ -230,35 +230,48 @@ export default function AdminDashboard() {
                       <X className="w-6 h-6" />
                     </button>
                   </div>
-                </div>
                   
-                <div className="px-6 pb-6 flex-1 overflow-hidden flex flex-col">
-                  <div className="grid grid-cols-3 gap-6 flex-1 min-h-0">
-                    <div className="col-span-1 border rounded-lg bg-gray-50 flex flex-col overflow-hidden">
-                      <div className="p-3 bg-gray-200 border-b font-semibold text-gray-700">Logs de triche</div>
-                      <div className="p-4 overflow-y-auto flex-1">
-                        {selectedSubmission.sub?.cheat_logs?.length > 0 ? (
-                          <ul className="space-y-3">
-                            {selectedSubmission.sub.cheat_logs.map((log: any, idx: number) => (
-                              <li key={idx} className="bg-red-50 p-3 rounded-md border border-red-100">
-                                <div className="text-sm font-bold text-red-800">{log.type}</div>
-                                <div className="text-xs text-red-600 mt-1">{log.details}</div>
-                                <div className="text-xs text-gray-500 mt-2">{new Date(log.time).toLocaleTimeString()}</div>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-gray-500 text-sm">Aucune anomalie détectée.</p>
-                        )}
+                  {/* Contenu principal : 2 colonnes */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Colonne de gauche : Code Source & Logs */}
+                    <div className="flex flex-col gap-4">
+                      <div className="border rounded-lg bg-gray-50 flex flex-col">
+                        <div className="p-3 bg-gray-200 border-b font-semibold text-gray-700">Logs de triche</div>
+                        <div className="p-4 max-h-40 overflow-y-auto">
+                          {selectedSubmission.sub?.cheat_logs?.length > 0 ? (
+                            <ul className="space-y-3">
+                              {selectedSubmission.sub.cheat_logs.map((log: any, idx: number) => (
+                                <li key={idx} className="bg-red-50 p-3 rounded-md border border-red-100">
+                                  <div className="text-sm font-bold text-red-800">{log.type}</div>
+                                  <div className="text-xs text-red-600 mt-1">{log.details}</div>
+                                  <div className="text-xs text-gray-500 mt-2">{new Date(log.time).toLocaleTimeString()}</div>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-gray-500 text-sm">Aucune anomalie détectée.</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="border rounded-lg flex flex-col flex-1">
+                        <div className="p-3 bg-gray-200 border-b font-semibold text-gray-700">
+                          Code Source (Tricherie en rouge)
+                        </div>
+                        <div className="bg-gray-900 p-4 max-h-96 overflow-y-auto">
+                          <pre className="text-gray-100 text-sm whitespace-pre-wrap">
+                            {renderHighlightedCode(selectedSubmission.sub?.html_code, selectedSubmission.sub?.cheat_logs)}
+                          </pre>
+                        </div>
                       </div>
                     </div>
                     
-                    <div className="col-span-2 border rounded-lg flex flex-col overflow-hidden">
-                      {/* Nous affichons le Preview ET le Code Source ici (Code source en haut, Preview en bas, ou côte à côte) */}
-                      <div className="p-3 bg-gray-200 border-b font-semibold text-gray-700 flex justify-between items-center">
-                        <span>Aperçu du rendu</span>
+                    {/* Colonne de droite : Preview */}
+                    <div className="border rounded-lg flex flex-col h-full min-h-[500px]">
+                      <div className="p-3 bg-gray-200 border-b font-semibold text-gray-700">
+                        Aperçu du rendu final
                       </div>
-                      <div className="flex-1 bg-white relative h-1/2 border-b">
+                      <div className="flex-1 bg-white relative">
                         {selectedSubmission.sub?.html_code ? (
                           <iframe
                             srcDoc={selectedSubmission.sub.html_code}
@@ -269,18 +282,10 @@ export default function AdminDashboard() {
                           <div className="flex items-center justify-center h-full text-gray-400">Aucun code soumis</div>
                         )}
                       </div>
-                      <div className="p-3 bg-gray-200 border-b font-semibold text-gray-700">
-                        <span>Code Source (Surlignage en rouge si triche)</span>
-                      </div>
-                      <div className="flex-1 overflow-y-auto bg-gray-900 p-4">
-                        <pre className="text-gray-100 text-sm whitespace-pre-wrap">
-                          {renderHighlightedCode(selectedSubmission.sub?.html_code, selectedSubmission.sub?.cheat_logs)}
-                        </pre>
-                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse flex-shrink-0">
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                   <button
                     type="button"
                     onClick={() => setSelectedSubmission(null)}
