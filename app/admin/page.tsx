@@ -214,86 +214,84 @@ export default function AdminDashboard() {
 
         {/* Modal for Submission Detail */}
         {selectedSubmission && (
-          <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={() => setSelectedSubmission(null)}></div>
-
-              <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl sm:w-full">
-                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-2xl font-bold text-gray-900" id="modal-title">
-                      Évaluation de {selectedSubmission.student.first_name} {selectedSubmission.student.last_name}
-                    </h3>
-                    <button onClick={() => setSelectedSubmission(null)} className="text-gray-400 hover:text-gray-500">
-                      <X className="w-6 h-6" />
-                    </button>
-                  </div>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-75 p-4 sm:p-6" onClick={() => setSelectedSubmission(null)}>
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-7xl max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+              <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 shrink-0">
+                <h3 className="text-xl font-bold text-gray-900">
+                  Évaluation de {selectedSubmission.student.first_name} {selectedSubmission.student.last_name}
+                </h3>
+                <button onClick={() => setSelectedSubmission(null)} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-6 bg-gray-100">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
                   
-                  {/* Contenu principal : 2 colonnes */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Colonne de gauche : Code Source & Logs */}
-                    <div className="flex flex-col gap-4">
-                      <div className="border rounded-lg bg-gray-50 flex flex-col">
-                        <div className="p-3 bg-gray-200 border-b font-semibold text-gray-700">Logs de triche</div>
-                        <div className="p-4 max-h-40 overflow-y-auto">
-                          {selectedSubmission.sub?.cheat_logs?.length > 0 ? (
-                            <ul className="space-y-3">
-                              {selectedSubmission.sub.cheat_logs.map((log: any, idx: number) => (
-                                <li key={idx} className="bg-red-50 p-3 rounded-md border border-red-100">
-                                  <div className="text-sm font-bold text-red-800">{log.type}</div>
-                                  <div className="text-xs text-red-600 mt-1">{log.details}</div>
-                                  <div className="text-xs text-gray-500 mt-2">{new Date(log.time).toLocaleTimeString()}</div>
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-gray-500 text-sm">Aucune anomalie détectée.</p>
-                          )}
-                        </div>
+                  {/* Gauche: Code et Logs */}
+                  <div className="flex flex-col gap-6">
+                    {/* Logs */}
+                    <div className="bg-white rounded-lg shadow border border-gray-200 shrink-0">
+                      <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 font-semibold text-gray-700 rounded-t-lg">
+                        Logs de triche
                       </div>
-
-                      <div className="border rounded-lg flex flex-col flex-1">
-                        <div className="p-3 bg-gray-200 border-b font-semibold text-gray-700">
-                          Code Source (Tricherie en rouge)
-                        </div>
-                        <div className="bg-gray-900 p-4 max-h-96 overflow-y-auto">
-                          <pre className="text-gray-100 text-sm whitespace-pre-wrap">
-                            {renderHighlightedCode(selectedSubmission.sub?.html_code, selectedSubmission.sub?.cheat_logs)}
-                          </pre>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Colonne de droite : Preview */}
-                    <div className="border rounded-lg flex flex-col h-full min-h-[500px]">
-                      <div className="p-3 bg-gray-200 border-b font-semibold text-gray-700">
-                        Aperçu du rendu final
-                      </div>
-                      <div className="flex-1 bg-white relative">
-                        {selectedSubmission.sub?.html_code ? (
-                          <iframe
-                            srcDoc={selectedSubmission.sub.html_code}
-                            className="absolute inset-0 w-full h-full border-0"
-                            title="Preview"
-                          />
+                      <div className="p-4 max-h-48 overflow-y-auto">
+                        {selectedSubmission.sub?.cheat_logs?.length > 0 ? (
+                          <ul className="space-y-2">
+                            {selectedSubmission.sub.cheat_logs.map((log: any, idx: number) => (
+                              <li key={idx} className="bg-red-50 p-3 rounded-md border border-red-100">
+                                <div className="text-sm font-bold text-red-800">{log.type}</div>
+                                <div className="text-xs text-red-600">{log.details}</div>
+                              </li>
+                            ))}
+                          </ul>
                         ) : (
-                          <div className="flex items-center justify-center h-full text-gray-400">Aucun code soumis</div>
+                          <p className="text-sm text-gray-500">Aucune triche détectée.</p>
                         )}
                       </div>
                     </div>
+                    
+                    {/* Source Code */}
+                    <div className="bg-white rounded-lg shadow border border-gray-200 flex flex-col h-[400px]">
+                      <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 font-semibold text-gray-700 rounded-t-lg shrink-0">
+                        Code Source
+                      </div>
+                      <div className="p-0 bg-gray-900 overflow-y-auto flex-1 rounded-b-lg">
+                        <pre className="text-gray-100 text-sm p-4 whitespace-pre-wrap">
+                          {renderHighlightedCode(selectedSubmission.sub?.html_code, selectedSubmission.sub?.cheat_logs)}
+                        </pre>
+                      </div>
+                    </div>
                   </div>
+                  
+                  {/* Droite: Preview */}
+                  <div className="bg-white rounded-lg shadow border border-gray-200 flex flex-col h-[500px] lg:h-auto">
+                    <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 font-semibold text-gray-700 rounded-t-lg shrink-0">
+                      Aperçu (Rendu HTML)
+                    </div>
+                    <div className="flex-1 bg-white relative rounded-b-lg overflow-hidden">
+                      {selectedSubmission.sub?.html_code ? (
+                        <iframe
+                          srcDoc={selectedSubmission.sub.html_code}
+                          className="absolute inset-0 w-full h-full border-0"
+                          title="Preview"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-gray-400">Aucun code</div>
+                      )}
+                    </div>
+                  </div>
+                  
                 </div>
-                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSubmission(null)}
-                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                  >
-                    Fermer
-                  </button>
-                </div>
+              </div>
+              
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end shrink-0">
+                <button
+                  onClick={() => setSelectedSubmission(null)}
+                  className="px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 font-medium text-sm"
+                >
+                  Fermer
+                </button>
               </div>
             </div>
           </div>
