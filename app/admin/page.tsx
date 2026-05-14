@@ -10,15 +10,16 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
   const [loginError, setLoginError] = useState('');
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (adminEmail.toLowerCase() === 'omarboudaya1@gmail.com') {
+    if (adminEmail.toLowerCase() === 'omarboudaya1@gmail.com' && adminPassword === 'admin123') {
       setIsAdminAuthenticated(true);
       fetchStudents();
     } else {
-      setLoginError('Accès refusé. Email non autorisé.');
+      setLoginError('Accès refusé. Email ou mot de passe incorrect.');
     }
   };
 
@@ -83,6 +84,18 @@ export default function AdminDashboard() {
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-black"
                 required
                 placeholder="Entrez l'email administrateur"
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">Mot de passe</label>
+              <input
+                type="password"
+                id="password"
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-black"
+                required
+                placeholder="Entrez le mot de passe"
               />
             </div>
             {loginError && <p className="text-red-600 text-sm">{loginError}</p>}

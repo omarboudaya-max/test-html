@@ -161,6 +161,15 @@ export default function Home() {
                 {loading ? 'Chargement...' : 'Commencer l\'examen'}
               </button>
             </div>
+            <div className="text-center mt-4">
+              <button
+                type="button"
+                onClick={() => router.push('/admin')}
+                className="text-xs text-gray-400 hover:text-gray-600"
+              >
+                Je suis un admin
+              </button>
+            </div>
           </form>
         </div>
       </div>
