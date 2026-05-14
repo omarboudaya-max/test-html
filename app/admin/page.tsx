@@ -160,9 +160,29 @@ export default function AdminDashboard() {
     try {
       const parsed = JSON.parse(codeString);
       if (Array.isArray(parsed)) {
-        const css = parsed.filter((f: any) => f.name.endsWith('.css')).map((f: any) => f.content).join('\n');
-        const html = parsed.filter((f: any) => f.name.endsWith('.html')).map((f: any) => f.content).join('\n');
-        return `<html><head><style>${css}</style></head><body>${html}</body></html>`;
+        let htmlCode = parsed.find((f: any) => f.name.endsWith('.html'))?.content || '';
+        
+        // Remplacement uniquement si la balise <link> est présente
+        htmlCode = htmlCode.replace(/<link[^>]*href=["']([^"']*\.css)["'][^>]*>/gi, (match, href) => {
+          const cleanHref = href.replace(/^(\.\/|\/)/, '');
+          const cssFile = parsed.find((f: any) => f.name === cleanHref);
+          if (cssFile) {
+            return `<style>${cssFile.content}</style>`;
+          }
+          return match;
+        });
+
+        // Même chose pour les scripts JS
+        htmlCode = htmlCode.replace(/<script[^>]*src=["']([^"']*\.js)["'][^>]*><\/script>/gi, (match, src) => {
+          const cleanSrc = src.replace(/^(\.\/|\/)/, '');
+          const jsFile = parsed.find((f: any) => f.name === cleanSrc);
+          if (jsFile) {
+            return `<script>${jsFile.content}</script>`;
+          }
+          return match;
+        });
+
+        return htmlCode;
       }
       return codeString;
     } catch {

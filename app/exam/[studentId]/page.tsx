@@ -193,16 +193,33 @@ export default function ExamPage({ params }: { params: Promise<{ studentId: stri
     }
   };
 
-  const combinedCode = `
-    <html>
-      <head>
-        <style>${files.filter(f => f.name.endsWith('.css')).map(f => f.content).join('\n')}</style>
-      </head>
-      <body>
-        ${files.filter(f => f.name.endsWith('.html')).map(f => f.content).join('\n')}
-      </body>
-    </html>
-  `;
+  const getCombinedCode = () => {
+    let htmlCode = files.find(f => f.name.endsWith('.html'))?.content || '';
+    
+    // L'étudiant DOIT lier le fichier CSS manuellement
+    htmlCode = htmlCode.replace(/<link[^>]*href=["']([^"']*\.css)["'][^>]*>/gi, (match, href) => {
+      const cleanHref = href.replace(/^(\.\/|\/)/, '');
+      const cssFile = files.find(f => f.name === cleanHref);
+      if (cssFile) {
+        return `<style>${cssFile.content}</style>`;
+      }
+      return match;
+    });
+
+    // Optionnel pour les fichiers JS
+    htmlCode = htmlCode.replace(/<script[^>]*src=["']([^"']*\.js)["'][^>]*><\/script>/gi, (match, src) => {
+      const cleanSrc = src.replace(/^(\.\/|\/)/, '');
+      const jsFile = files.find(f => f.name === cleanSrc);
+      if (jsFile) {
+        return `<script>${jsFile.content}</script>`;
+      }
+      return match;
+    });
+
+    return htmlCode;
+  };
+
+  const combinedCode = getCombinedCode();
 
   if (isFinished) {
     return (
