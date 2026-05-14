@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { AlertTriangle, CheckCircle, Clock, Eye, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Clock, Eye, X, Star, ShieldAlert, Trash2 } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [students, setStudents] = useState<any[]>([]);
@@ -12,6 +12,8 @@ export default function AdminDashboard() {
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+  const [activeTab, setActiveTab] = useState<'pending' | 'corrected' | 'cheated' | 'all'>('pending');
+  const [isGrading, setIsGrading] = useState(false);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +52,37 @@ export default function AdminDashboard() {
     }
   }, [isAdminAuthenticated]);
 
+  const handleGrade = async (studentId: string, grade: number | 'cheated') => {
+    setIsGrading(true);
+    try {
+      const updates: any = {};
+      if (grade === 'cheated') {
+        updates.test_status = 'cheated';
+        updates.grade = null;
+      } else {
+        updates.grade = grade;
+        updates.test_status = 'completed'; // S'assurer qu'il reste en complété
+      }
+
+      const { error } = await supabase
+        .from('students')
+        .update(updates)
+        .eq('id', studentId);
+
+      if (error) throw error;
+      
+      // Mettre à jour l'état local pour un feedback immédiat
+      setStudents(students.map(s => s.id === studentId ? { ...s, ...updates } : s));
+      setSelectedSubmission(null);
+      alert(grade === 'cheated' ? "Test marqué comme triché." : `Note de ${grade}/5 enregistrée.`);
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de l'enregistrement. Vérifiez que la colonne 'grade' existe dans Supabase.");
+    } finally {
+      setIsGrading(false);
+    }
+  };
+
   const formatTime = (seconds: number) => {
     if (!seconds) return '00:00';
     const m = Math.floor(seconds / 60);
@@ -57,8 +90,16 @@ export default function AdminDashboard() {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
+  const getStatusBadge = (student: any) => {
+    if (student.test_status === 'cheated') {
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><ShieldAlert className="w-3 h-3 mr-1"/> Triché</span>;
+    }
+    
+    if (student.grade !== null && student.grade !== undefined) {
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800"><Star className="w-3 h-3 mr-1"/> Corrigé ({student.grade}/5)</span>;
+    }
+
+    switch (student.test_status) {
       case 'completed':
         return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1"/> Terminé</span>;
       case 'in_progress':
@@ -67,6 +108,14 @@ export default function AdminDashboard() {
         return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">En attente</span>;
     }
   };
+
+  const filteredStudents = students.filter(s => {
+    if (activeTab === 'all') return true;
+    if (activeTab === 'pending') return s.test_status === 'completed' && (s.grade === null || s.grade === undefined);
+    if (activeTab === 'corrected') return s.grade !== null && s.grade !== undefined && s.test_status !== 'cheated';
+    if (activeTab === 'cheated') return s.test_status === 'cheated';
+    return true;
+  });
 
   if (!isAdminAuthenticated) {
     return (
@@ -136,10 +185,7 @@ export default function AdminDashboard() {
                             .replace(/'/g, "&#039;");
 
       pasteLogs.forEach((log: any) => {
-        // Monaco Editor convertit les sauts de ligne Windows (\r\n) en \n.
-        // Il faut donc normaliser le texte collé pour que la comparaison (split) fonctionne.
         const normalizedPasted = (log.pastedText || '').replace(/\r\n/g, '\n');
-        
         const escapedPasted = normalizedPasted.replace(/&/g, "&amp;")
                                               .replace(/</g, "&lt;")
                                               .replace(/>/g, "&gt;")
@@ -167,7 +213,6 @@ export default function AdminDashboard() {
       if (Array.isArray(parsed)) {
         let htmlCode = parsed.find((f: any) => f.name.endsWith('.html'))?.content || '';
         
-        // Remplacement uniquement si la balise <link> est présente
         htmlCode = htmlCode.replace(/<link[^>]*href=["']([^"']*\.css)["'][^>]*>/gi, (match: string, href: string) => {
           const cleanHref = href.replace(/^(\.\/|\/)/, '');
           const cssFile = parsed.find((f: any) => f.name === cleanHref);
@@ -177,7 +222,6 @@ export default function AdminDashboard() {
           return match;
         });
 
-        // Même chose pour les scripts JS
         htmlCode = htmlCode.replace(/<script[^>]*src=["']([^"']*\.js)["'][^>]*><\/script>/gi, (match: string, src: string) => {
           const cleanSrc = src.replace(/^(\.\/|\/)/, '');
           const jsFile = parsed.find((f: any) => f.name === cleanSrc);
@@ -198,72 +242,103 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <h1 className="text-3xl font-bold text-gray-900">Dashboard Professeur</h1>
-          <button 
-            onClick={fetchStudents}
-            className="bg-white text-gray-700 px-4 py-2 border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 text-sm font-medium"
-          >
-            Actualiser
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={fetchStudents}
+              className="bg-white text-gray-700 px-4 py-2 border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 text-sm font-medium"
+            >
+              Actualiser
+            </button>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex border-b border-gray-200 mb-6 bg-white rounded-t-lg px-2 overflow-x-auto">
+          {[
+            { id: 'pending', label: 'En attente', icon: <Clock className="w-4 h-4 mr-2"/> },
+            { id: 'corrected', label: 'Corrigés', icon: <CheckCircle className="w-4 h-4 mr-2"/> },
+            { id: 'cheated', label: 'Trichés', icon: <ShieldAlert className="w-4 h-4 mr-2"/> },
+            { id: 'all', label: 'Tous', icon: <Eye className="w-4 h-4 mr-2"/> }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
+                activeTab === tab.id 
+                  ? 'border-blue-600 text-blue-600' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         {loading ? (
           <div className="text-center py-12 text-gray-500">Chargement des données...</div>
         ) : (
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+          <div className="bg-white shadow overflow-hidden sm:rounded-b-lg">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Étudiant</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Classe</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Triche</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut / Note</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Surveillance</th>
                   <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {students.map((student) => {
-                  const sub = student.submissions?.[0];
-                  const cheatLogs = sub?.cheat_logs || [];
-                  
-                  return (
-                    <tr key={student.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{student.first_name} {student.last_name}</div>
-                        <div className="text-sm text-gray-500">{student.email}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {student.class_name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(student.test_status)}
-                        {sub?.time_spent_seconds > 0 && (
-                          <div className="text-xs text-gray-500 mt-1">Temps: {formatTime(sub.time_spent_seconds)}</div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {student.is_cheater || cheatLogs.length > 0 ? (
-                          <div className="flex items-center text-red-600">
-                            <AlertTriangle className="w-5 h-5 mr-1" />
-                            <span className="text-sm font-medium">{cheatLogs.length} alertes</span>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-gray-500">Aucune</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => setSelectedSubmission({ student, sub })}
-                          className="text-blue-600 hover:text-blue-900 flex items-center justify-end w-full"
-                        >
-                          <Eye className="w-4 h-4 mr-1" />
-                          Voir
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {filteredStudents.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">Aucun étudiant dans cette catégorie.</td>
+                  </tr>
+                ) : (
+                  filteredStudents.map((student) => {
+                    const sub = student.submissions?.[0];
+                    const cheatLogs = sub?.cheat_logs || [];
+                    
+                    return (
+                      <tr key={student.id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{student.first_name} {student.last_name}</div>
+                          <div className="text-sm text-gray-500">{student.email}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {student.class_name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {getStatusBadge(student)}
+                          {sub?.time_spent_seconds > 0 && (
+                            <div className="text-xs text-gray-500 mt-1">Temps: {formatTime(sub.time_spent_seconds)}</div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {student.is_cheater || cheatLogs.length > 0 ? (
+                            <div className="flex items-center text-red-600">
+                              <AlertTriangle className="w-5 h-5 mr-1" />
+                              <span className="text-sm font-medium">{cheatLogs.length} alertes</span>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-500">Aucune alerte</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button
+                            onClick={() => setSelectedSubmission({ student, sub })}
+                            className="text-blue-600 hover:text-blue-900 flex items-center justify-end w-full"
+                          >
+                            <Eye className="w-4 h-4 mr-1" />
+                            Voir et Noter
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
@@ -274,9 +349,16 @@ export default function AdminDashboard() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-75 p-4 sm:p-6" onClick={() => setSelectedSubmission(null)}>
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-7xl max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
               <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 shrink-0">
-                <h3 className="text-xl font-bold text-gray-900">
-                  Évaluation de {selectedSubmission.student.first_name} {selectedSubmission.student.last_name}
-                </h3>
+                <div className="flex items-center gap-4">
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Copie de {selectedSubmission.student.first_name} {selectedSubmission.student.last_name}
+                  </h3>
+                  {selectedSubmission.student.grade !== null && (
+                    <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-bold">
+                      Note: {selectedSubmission.student.grade}/5
+                    </span>
+                  )}
+                </div>
                 <button onClick={() => setSelectedSubmission(null)} className="text-gray-400 hover:text-gray-600">
                   <X className="w-6 h-6" />
                 </button>
@@ -290,7 +372,7 @@ export default function AdminDashboard() {
                     {/* Logs */}
                     <div className="bg-white rounded-lg shadow border border-gray-200 shrink-0">
                       <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 font-semibold text-gray-700 rounded-t-lg">
-                        Logs de triche
+                        Surveillance (Logs)
                       </div>
                       <div className="p-4 max-h-48 overflow-y-auto">
                         {selectedSubmission.sub?.cheat_logs?.length > 0 ? (
@@ -303,7 +385,7 @@ export default function AdminDashboard() {
                             ))}
                           </ul>
                         ) : (
-                          <p className="text-sm text-gray-500">Aucune triche détectée.</p>
+                          <p className="text-sm text-gray-500">Aucun comportement suspect détecté.</p>
                         )}
                       </div>
                     </div>
@@ -342,13 +424,51 @@ export default function AdminDashboard() {
                 </div>
               </div>
               
-              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end shrink-0">
-                <button
-                  onClick={() => setSelectedSubmission(null)}
-                  className="px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 font-medium text-sm"
-                >
-                  Fermer
-                </button>
+              {/* Grading Actions Footer */}
+              <div className="px-6 py-6 bg-white border-t border-gray-200 shrink-0">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+                  <div className="flex flex-col gap-2 w-full sm:w-auto">
+                    <span className="text-sm font-bold text-gray-700 uppercase tracking-wider">Attribuer une note :</span>
+                    <div className="flex flex-wrap gap-2">
+                      {[0, 1, 2, 3, 4, 5].map((g) => (
+                        <button
+                          key={g}
+                          disabled={isGrading}
+                          onClick={() => handleGrade(selectedSubmission.student.id, g)}
+                          className={`w-12 h-12 rounded-lg font-bold text-lg transition-all flex items-center justify-center border-2 ${
+                            selectedSubmission.student.grade === g
+                              ? 'bg-blue-600 border-blue-600 text-white scale-110 shadow-lg'
+                              : 'bg-white border-gray-200 text-gray-700 hover:border-blue-400 hover:text-blue-600'
+                          }`}
+                        >
+                          {g}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 w-full sm:w-auto">
+                    <button
+                      disabled={isGrading}
+                      onClick={() => handleGrade(selectedSubmission.student.id, 'cheated')}
+                      className={`flex-1 sm:flex-none px-6 py-3 rounded-lg font-bold flex items-center justify-center gap-2 border-2 transition-all ${
+                        selectedSubmission.student.test_status === 'cheated'
+                          ? 'bg-red-600 border-red-600 text-white shadow-lg'
+                          : 'bg-white border-red-200 text-red-600 hover:bg-red-50'
+                      }`}
+                    >
+                      <ShieldAlert className="w-5 h-5" />
+                      MARQUER TRICHÉ
+                    </button>
+                    
+                    <button
+                      onClick={() => setSelectedSubmission(null)}
+                      className="px-6 py-3 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 font-bold transition-colors"
+                    >
+                      FERMER
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -357,3 +477,4 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
