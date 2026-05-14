@@ -136,11 +136,16 @@ export default function AdminDashboard() {
                             .replace(/'/g, "&#039;");
 
       pasteLogs.forEach((log: any) => {
-        const escapedPasted = log.pastedText.replace(/&/g, "&amp;")
-                                            .replace(/</g, "&lt;")
-                                            .replace(/>/g, "&gt;")
-                                            .replace(/"/g, "&quot;")
-                                            .replace(/'/g, "&#039;");
+        // Monaco Editor convertit les sauts de ligne Windows (\r\n) en \n.
+        // Il faut donc normaliser le texte collé pour que la comparaison (split) fonctionne.
+        const normalizedPasted = (log.pastedText || '').replace(/\r\n/g, '\n');
+        
+        const escapedPasted = normalizedPasted.replace(/&/g, "&amp;")
+                                              .replace(/</g, "&lt;")
+                                              .replace(/>/g, "&gt;")
+                                              .replace(/"/g, "&quot;")
+                                              .replace(/'/g, "&#039;");
+                                              
         if (escapedPasted.trim() !== '') {
           escapedCode = escapedCode.split(escapedPasted).join(`<span class="bg-red-500/60 text-white border border-red-400 px-1 rounded-md" title="Copier-Coller suspecté">${escapedPasted}</span>`);
         }
