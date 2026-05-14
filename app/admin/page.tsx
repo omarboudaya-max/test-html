@@ -111,6 +111,33 @@ export default function AdminDashboard() {
     );
   }
 
+  const renderHighlightedCode = (code: string, cheatLogs: any[]) => {
+    if (!code) return 'Aucun code';
+    
+    // Échapper le code pour l'affichage (XSS protection)
+    let escapedCode = code.replace(/&/g, "&amp;")
+                          .replace(/</g, "&lt;")
+                          .replace(/>/g, "&gt;")
+                          .replace(/"/g, "&quot;")
+                          .replace(/'/g, "&#039;");
+
+    const pasteLogs = cheatLogs?.filter((log: any) => log.type === 'paste' && log.pastedText) || [];
+
+    pasteLogs.forEach((log: any) => {
+      const escapedPasted = log.pastedText.replace(/&/g, "&amp;")
+                                          .replace(/</g, "&lt;")
+                                          .replace(/>/g, "&gt;")
+                                          .replace(/"/g, "&quot;")
+                                          .replace(/'/g, "&#039;");
+      if (escapedPasted.trim() !== '') {
+        // Remplacer avec la balise de surlignage
+        escapedCode = escapedCode.split(escapedPasted).join(`<span class="bg-red-500/40 text-red-200 border-b-2 border-red-500 font-bold px-1 rounded" title="Copier-Coller suspecté">${escapedPasted}</span>`);
+      }
+    });
+
+    return <code dangerouslySetInnerHTML={{ __html: escapedCode }} />;
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-7xl mx-auto">
@@ -244,8 +271,8 @@ export default function AdminDashboard() {
                   
                   <div className="mt-4 border-t pt-4">
                     <h4 className="font-semibold text-gray-700 mb-2">Code Source :</h4>
-                    <pre className="bg-gray-900 text-gray-100 p-4 rounded-md overflow-x-auto text-sm max-h-48">
-                      {selectedSubmission.sub?.html_code || 'Aucun code'}
+                    <pre className="bg-gray-900 text-gray-100 p-4 rounded-md overflow-x-auto text-sm max-h-48 whitespace-pre-wrap">
+                      {renderHighlightedCode(selectedSubmission.sub?.html_code, selectedSubmission.sub?.cheat_logs)}
                     </pre>
                   </div>
                 </div>

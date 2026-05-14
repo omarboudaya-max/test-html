@@ -50,8 +50,8 @@ export default function ExamPage({ params }: { params: Promise<{ studentId: stri
   useEffect(() => {
     if (isFinished) return;
 
-    const logCheat = async (type: string, details: string) => {
-      const newLog = { type, details, time: new Date().toISOString() };
+    const logCheat = async (type: string, details: string, pastedText?: string) => {
+      const newLog = { type, details, time: new Date().toISOString(), pastedText };
       const updatedLogs = [...cheatLogs, newLog];
       setCheatLogs(updatedLogs);
 
@@ -78,8 +78,11 @@ export default function ExamPage({ params }: { params: Promise<{ studentId: stri
     };
 
     const handlePaste = (e: ClipboardEvent) => {
-      e.preventDefault();
-      logCheat('paste_attempt', "Tentative de copier-coller détectée dans la fenêtre.");
+      // Nous laissons le collage passer (pas de preventDefault) pour le surligner chez l'admin
+      const pastedText = e.clipboardData?.getData('text');
+      if (pastedText && pastedText.trim().length > 0) {
+        logCheat('paste', "Un copier-coller a été détecté et enregistré.", pastedText);
+      }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -143,15 +146,6 @@ export default function ExamPage({ params }: { params: Promise<{ studentId: stri
 
   const handleEditorDidMount = (editor: any, monaco: any) => {
     editorRef.current = editor;
-    
-    // Disable paste inside Monaco Editor
-    editor.onKeyDown((e: any) => {
-      // CMD+V or CTRL+V
-      if ((e.ctrlKey || e.metaKey) && e.keyCode === monaco.KeyCode.KeyV) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    });
   };
 
   if (isFinished) {
