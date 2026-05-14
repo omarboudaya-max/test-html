@@ -220,8 +220,8 @@ export default function AdminDashboard() {
 
               <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl sm:w-full">
-                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+              <div className="inline-block align-bottom bg-white rounded-lg text-left shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl sm:w-full flex flex-col max-h-[90vh]">
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 flex-shrink-0">
                   <div className="flex justify-between items-start mb-4">
                     <h3 className="text-2xl font-bold text-gray-900" id="modal-title">
                       Évaluation de {selectedSubmission.student.first_name} {selectedSubmission.student.last_name}
@@ -230,8 +230,10 @@ export default function AdminDashboard() {
                       <X className="w-6 h-6" />
                     </button>
                   </div>
+                </div>
                   
-                  <div className="grid grid-cols-3 gap-6 h-[70vh]">
+                <div className="px-6 pb-6 flex-1 overflow-hidden flex flex-col">
+                  <div className="grid grid-cols-3 gap-6 flex-1 min-h-0">
                     <div className="col-span-1 border rounded-lg bg-gray-50 flex flex-col overflow-hidden">
                       <div className="p-3 bg-gray-200 border-b font-semibold text-gray-700">Logs de triche</div>
                       <div className="p-4 overflow-y-auto flex-1">
@@ -252,10 +254,11 @@ export default function AdminDashboard() {
                     </div>
                     
                     <div className="col-span-2 border rounded-lg flex flex-col overflow-hidden">
-                      <div className="p-3 bg-gray-200 border-b flex justify-between items-center font-semibold text-gray-700">
-                        <span>Aperçu du rendu (HTML)</span>
+                      {/* Nous affichons le Preview ET le Code Source ici (Code source en haut, Preview en bas, ou côte à côte) */}
+                      <div className="p-3 bg-gray-200 border-b font-semibold text-gray-700 flex justify-between items-center">
+                        <span>Aperçu du rendu</span>
                       </div>
-                      <div className="flex-1 bg-white relative">
+                      <div className="flex-1 bg-white relative h-1/2 border-b">
                         {selectedSubmission.sub?.html_code ? (
                           <iframe
                             srcDoc={selectedSubmission.sub.html_code}
@@ -266,17 +269,18 @@ export default function AdminDashboard() {
                           <div className="flex items-center justify-center h-full text-gray-400">Aucun code soumis</div>
                         )}
                       </div>
+                      <div className="p-3 bg-gray-200 border-b font-semibold text-gray-700">
+                        <span>Code Source (Surlignage en rouge si triche)</span>
+                      </div>
+                      <div className="flex-1 overflow-y-auto bg-gray-900 p-4">
+                        <pre className="text-gray-100 text-sm whitespace-pre-wrap">
+                          {renderHighlightedCode(selectedSubmission.sub?.html_code, selectedSubmission.sub?.cheat_logs)}
+                        </pre>
+                      </div>
                     </div>
                   </div>
-                  
-                  <div className="mt-4 border-t pt-4">
-                    <h4 className="font-semibold text-gray-700 mb-2">Code Source :</h4>
-                    <pre className="bg-gray-900 text-gray-100 p-4 rounded-md overflow-x-auto text-sm max-h-48 whitespace-pre-wrap">
-                      {renderHighlightedCode(selectedSubmission.sub?.html_code, selectedSubmission.sub?.cheat_logs)}
-                    </pre>
-                  </div>
                 </div>
-                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse flex-shrink-0">
                   <button
                     type="button"
                     onClick={() => setSelectedSubmission(null)}
