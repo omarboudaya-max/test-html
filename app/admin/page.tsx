@@ -142,7 +142,7 @@ export default function AdminDashboard() {
                                             .replace(/"/g, "&quot;")
                                             .replace(/'/g, "&#039;");
         if (escapedPasted.trim() !== '') {
-          escapedCode = escapedCode.split(escapedPasted).join(`<span class="bg-red-500/40 text-red-200 border-b-2 border-red-500 font-bold px-1 rounded" title="Copier-Coller suspecté">${escapedPasted}</span>`);
+          escapedCode = escapedCode.split(escapedPasted).join(`<span class="bg-red-900/20 text-red-300 border-b border-red-500/50" title="Copier-Coller suspecté">${escapedPasted}</span>`);
         }
       });
 
