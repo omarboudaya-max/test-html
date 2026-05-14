@@ -168,7 +168,7 @@ export default function AdminDashboard() {
         let htmlCode = parsed.find((f: any) => f.name.endsWith('.html'))?.content || '';
         
         // Remplacement uniquement si la balise <link> est présente
-        htmlCode = htmlCode.replace(/<link[^>]*href=["']([^"']*\.css)["'][^>]*>/gi, (match, href) => {
+        htmlCode = htmlCode.replace(/<link[^>]*href=["']([^"']*\.css)["'][^>]*>/gi, (match: string, href: string) => {
           const cleanHref = href.replace(/^(\.\/|\/)/, '');
           const cssFile = parsed.find((f: any) => f.name === cleanHref);
           if (cssFile) {
@@ -178,7 +178,7 @@ export default function AdminDashboard() {
         });
 
         // Même chose pour les scripts JS
-        htmlCode = htmlCode.replace(/<script[^>]*src=["']([^"']*\.js)["'][^>]*><\/script>/gi, (match, src) => {
+        htmlCode = htmlCode.replace(/<script[^>]*src=["']([^"']*\.js)["'][^>]*><\/script>/gi, (match: string, src: string) => {
           const cleanSrc = src.replace(/^(\.\/|\/)/, '');
           const jsFile = parsed.find((f: any) => f.name === cleanSrc);
           if (jsFile) {

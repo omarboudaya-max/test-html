@@ -197,7 +197,7 @@ export default function ExamPage({ params }: { params: Promise<{ studentId: stri
     let htmlCode = files.find(f => f.name.endsWith('.html'))?.content || '';
     
     // L'étudiant DOIT lier le fichier CSS manuellement
-    htmlCode = htmlCode.replace(/<link[^>]*href=["']([^"']*\.css)["'][^>]*>/gi, (match, href) => {
+    htmlCode = htmlCode.replace(/<link[^>]*href=["']([^"']*\.css)["'][^>]*>/gi, (match: string, href: string) => {
       const cleanHref = href.replace(/^(\.\/|\/)/, '');
       const cssFile = files.find(f => f.name === cleanHref);
       if (cssFile) {
@@ -207,7 +207,7 @@ export default function ExamPage({ params }: { params: Promise<{ studentId: stri
     });
 
     // Optionnel pour les fichiers JS
-    htmlCode = htmlCode.replace(/<script[^>]*src=["']([^"']*\.js)["'][^>]*><\/script>/gi, (match, src) => {
+    htmlCode = htmlCode.replace(/<script[^>]*src=["']([^"']*\.js)["'][^>]*><\/script>/gi, (match: string, src: string) => {
       const cleanSrc = src.replace(/^(\.\/|\/)/, '');
       const jsFile = files.find(f => f.name === cleanSrc);
       if (jsFile) {
