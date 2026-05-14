@@ -75,7 +75,7 @@ export default function ExamPage({ params }: { params: Promise<{ studentId: stri
         .update({ is_cheater: true })
         .eq('id', studentId);
         
-      alert(`Alerte de sécurité : ${details}`);
+      // L'alerte a été supprimée pour que la surveillance soit 100% invisible pour l'étudiant
     };
 
     const handleVisibilityChange = () => {
@@ -85,6 +85,9 @@ export default function ExamPage({ params }: { params: Promise<{ studentId: stri
     };
 
     const handleBlur = () => {
+      // @ts-ignore : On ignore la perte de focus si l'étudiant clique sur le bouton "Ajouter fichier"
+      if (window.ignoreBlur) return;
+      
       logCheat('focus_loss', "L'étudiant a changé de fenêtre ou a perdu le focus.");
     };
 
@@ -172,7 +175,17 @@ export default function ExamPage({ params }: { params: Promise<{ studentId: stri
   };
 
   const handleAddFile = () => {
+    // @ts-ignore : Désactiver temporairement la détection de perte de focus
+    window.ignoreBlur = true;
+    
     const fileName = prompt('Nom du fichier (ex: script.js) :');
+    
+    // Réactiver après un court délai pour laisser le temps au navigateur de redonner le focus à la page
+    setTimeout(() => {
+      // @ts-ignore
+      window.ignoreBlur = false;
+    }, 500);
+
     if (fileName) {
       const language = fileName.endsWith('.css') ? 'css' : fileName.endsWith('.js') ? 'javascript' : 'html';
       setFiles([...files, { name: fileName, language, content: '' }]);
